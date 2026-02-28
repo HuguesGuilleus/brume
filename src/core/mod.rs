@@ -68,7 +68,7 @@ impl DTO for CounterAddDTO {
     }
 
     fn check_user(self: &Self, _user: &UserToken) -> Result<()> {
-        Err(WrapError::http(StatusCode::BAD_REQUEST, "just in dev!"))
+        Ok(())
     }
 }
 
