@@ -15,7 +15,7 @@ pub const TOKEN_BASE64: WrapError = WrapError {
     argument: None,
 };
 
-pub const TOKEN_TO_SHOORT: WrapError = WrapError {
+pub const TOKEN_TO_SHORT: WrapError = WrapError {
     desc: "The token is too short",
     status_http: Some(StatusCode::BAD_REQUEST),
     source_error: None,
