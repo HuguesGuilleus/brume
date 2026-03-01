@@ -6,7 +6,7 @@ pub type Result<T> = std::result::Result<T, WrapError>;
 #[derive(Debug)]
 pub struct WrapError {
     /// A simple description string, without new line, returned to the client.
-    desc: &'static str,
+    pub desc: &'static str,
     /// Sub error
     pub source_error: Option<Box<dyn std::error::Error + 'static>>,
     /// Some argument, logged, but not returned to client.
