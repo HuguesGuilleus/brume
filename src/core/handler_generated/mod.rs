@@ -37,14 +37,15 @@ async fn serve_generated(
 ) -> axum::http::response::Response<Body> {
     let pages = server.pages.read().unwrap();
 
-    let (status, body) = match pages.get(uri.path()) {
-        Some(data) => {
-            let body = axum::body::Body::from(data.1.to_vec());
-            (StatusCode::OK, body)
+    let (status, mime, body) = match pages.get(uri.path()) {
+        Some(arc) => {
+            let (mime, body) = &**arc;
+            let body = axum::body::Body::from(body.to_vec());
+            (StatusCode::OK, mime.clone(), body)
         }
         None => {
             let body = axum::body::Body::from(PAGE404.to_vec());
-            (StatusCode::NOT_FOUND, body)
+            (StatusCode::NOT_FOUND, MIME_HTML, body)
         }
     };
 
@@ -53,7 +54,7 @@ async fn serve_generated(
 
     response
         .headers_mut()
-        .insert(axum::http::header::CONTENT_TYPE, MIME_HTML);
+        .append(axum::http::header::CONTENT_TYPE, mime);
 
     response
 }

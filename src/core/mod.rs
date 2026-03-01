@@ -11,6 +11,7 @@ use tokio;
 
 pub use error::*;
 pub use fs_mem::*;
+pub use handler_generated::MIME_TEXT;
 pub use handler_json::json_handler;
 pub use user_token::*;
 
@@ -26,10 +27,16 @@ impl Server {
     pub fn new() -> Self {
         let pages = std::collections::BTreeMap::new();
 
-        Server {
+        let server = Server {
             counter: std::sync::atomic::AtomicU64::new(1),
             pages: std::sync::RwLock::new(pages),
-        }
+        };
+        server.init();
+        server
+    }
+
+    pub fn init(&self) {
+        service_counter_render(self, 1);
     }
 }
 
@@ -91,16 +98,23 @@ pub async fn service_counter_add(
     server: &Server,
     dto: &JsonRequest<CounterAddDTO>,
 ) -> JsonResult<CounterAddDTO> {
-    json_response_ok(CounterAddDTO {
-        nb: dto.dto.nb
-            + server
-                .counter
-                .fetch_add(dto.dto.nb, std::sync::atomic::Ordering::AcqRel),
-    })
+    let nb = dto.dto.nb
+        + server
+            .counter
+            .fetch_add(dto.dto.nb, std::sync::atomic::Ordering::AcqRel);
+    service_counter_render(server, nb);
+    json_response_ok(CounterAddDTO { nb })
+}
+
+fn service_counter_render(server: &Server, nb: u64) {
+    server.pages.write().unwrap().insert(
+        String::from("/counter"),
+        Arc::new((MIME_TEXT, format!("counter={}\r\n", nb).into_bytes())),
+    );
 }
 
 #[tokio::test]
-async fn feature() {
+async fn service_counter_add_test() {
     let s = Server::new();
     let out = service_counter_add(
         &s,
