@@ -1,11 +1,12 @@
 mod error;
 mod fs_mem;
+pub mod handler_generated;
 mod handler_json;
 mod user_token;
 
-use axum::http::StatusCode;
+use axum::http::{HeaderValue, StatusCode};
 use serde::{Deserialize, Serialize};
-use std::fmt::Debug;
+use std::{fmt::Debug, sync::Arc};
 use tokio;
 
 pub use error::*;
@@ -16,6 +17,20 @@ pub use user_token::*;
 /// Access to all information for the handler.
 pub struct Server {
     pub counter: std::sync::atomic::AtomicU64,
+
+    /// Pre generated pages, ready to send.
+    pub pages: std::sync::RwLock<std::collections::BTreeMap<String, Arc<(HeaderValue, Vec<u8>)>>>,
+}
+
+impl Server {
+    pub fn new() -> Self {
+        let pages = std::collections::BTreeMap::new();
+
+        Server {
+            counter: std::sync::atomic::AtomicU64::new(1),
+            pages: std::sync::RwLock::new(pages),
+        }
+    }
 }
 
 /// Informations of the request for the handler.
@@ -86,9 +101,7 @@ pub async fn service_counter_add(
 
 #[tokio::test]
 async fn feature() {
-    let s = Server {
-        counter: std::sync::atomic::AtomicU64::new(1),
-    };
+    let s = Server::new();
     let out = service_counter_add(
         &s,
         &JsonRequest {
