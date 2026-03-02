@@ -1,27 +1,36 @@
 mod error;
-mod errw;
-mod fs_mem;
+pub mod errw;
 pub mod handler_generated;
 mod handler_json;
 mod user_token;
 
+use crate::hand_home;
 use axum::http::{HeaderValue, StatusCode};
 use serde::{Deserialize, Serialize};
 use std::{fmt::Debug, sync::Arc};
 use tokio;
 
 pub use error::*;
-pub use fs_mem::*;
 pub use handler_generated::MIME_TEXT;
 pub use handler_json::json_handler;
 pub use user_token::*;
 
+#[derive(Debug)]
 /// Access to all information for the handler.
 pub struct Server {
     pub counter: std::sync::atomic::AtomicU64,
 
     /// Pre generated pages, ready to send.
     pub pages: std::sync::RwLock<std::collections::BTreeMap<String, Arc<(HeaderValue, Vec<u8>)>>>,
+
+    pub home: std::sync::Mutex<Page>,
+}
+
+#[derive(Debug, Clone, Default)]
+pub struct Page {
+    pub title: String,
+    pub description: String,
+    pub body: String,
 }
 
 impl Server {
@@ -31,16 +40,20 @@ impl Server {
         let server = Server {
             counter: std::sync::atomic::AtomicU64::new(1),
             pages: std::sync::RwLock::new(pages),
+            home: Page::default().into(),
         };
-        server.init();
+        server.init().unwrap();
         server
     }
 
-    pub fn init(&self) {
+    pub fn init(&self) -> Result<()> {
         service_counter_render(self, 1);
+        hand_home::init(self)?;
+        Ok(())
     }
 }
 
+#[derive(Debug, Clone)]
 /// Informations of the request for the handler.
 pub struct JsonRequest<T: DTO> {
     pub user: UserToken,
@@ -48,13 +61,24 @@ pub struct JsonRequest<T: DTO> {
 }
 
 /// Check if the data is coerent, exist. It do not have acces to the dara.
-pub trait DTO: Debug + for<'a> Deserialize<'a> {
+pub trait DTO: Debug + for<'a> Deserialize<'a> + Default {
+    const IS_EMPTY: bool = false;
+
     fn check(self: &Self) -> Result<()> {
         Ok(())
     }
     fn check_user(self: &Self, _user: &UserToken) -> Result<()> {
         Ok(())
     }
+}
+
+pub trait NoDTO: DTO {}
+
+#[derive(Debug, Clone, Deserialize, Default)]
+pub struct EmptyDTO();
+
+impl DTO for EmptyDTO {
+    const IS_EMPTY: bool = true;
 }
 
 #[derive(Debug, PartialEq)]
@@ -74,7 +98,7 @@ pub fn json_response_ok<T: Serialize + Debug + PartialEq>(data: T) -> JsonResult
 
 ////////////////////////////////////////////////
 
-#[derive(Serialize, Deserialize, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Default)]
 pub struct CounterAddDTO {
     pub nb: u64,
 }

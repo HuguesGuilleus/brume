@@ -47,6 +47,8 @@ fn print_err(buf: &mut String, err: &WrapError) {
 async fn json_mux(server: &Server, service: &str, body: Bytes) -> Result<Vec<u8>> {
     match service {
         "counter" => caller(&server, body, service_counter_add).await,
+        "home.get" => caller(&server, body, hand_home::get).await,
+        "home.set" => caller(&server, body, hand_home::set).await,
         _ => return Err(WrapError::http(StatusCode::NOT_FOUND, "Service not found")),
     }
 }
@@ -59,8 +61,13 @@ where
 {
     let user = UserToken::default();
 
-    let dto: T = serde_json::from_slice(&body)
-        .map_err(|_| WrapError::http(StatusCode::BAD_REQUEST, "Decoding request JSON body fail"))?;
+    let dto: T = if T::IS_EMPTY {
+        T::default()
+    } else {
+        serde_json::from_slice(&body).map_err(|_| {
+            WrapError::http(StatusCode::BAD_REQUEST, "Decoding request JSON body fail")
+        })?
+    };
 
     dto.check()?;
     dto.check_user(&user)?;

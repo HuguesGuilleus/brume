@@ -1,27 +1,27 @@
-use std::sync::Arc;
+// use std::sync::Arc;
 
 use brume::{self};
 use tokio;
 
-const INDEX_HTML: &[u8] = include_bytes!("index.html");
+// const INDEX_HTML: &[u8] = include_bytes!("index.html");
 
 #[tokio::main(flavor = "current_thread")]
 async fn main() {
     let server = std::sync::Arc::new(brume::Server::new());
-    {
-        let mut pages = server.pages.write().unwrap();
-        pages.insert(
-            "/".to_string(),
-            Arc::new((brume::handler_generated::MIME_HTML, INDEX_HTML.to_vec())),
-        );
-        pages.insert(
-            "/a".to_string(),
-            Arc::new((
-                brume::handler_generated::MIME_TEXT,
-                b"Hello from a".to_vec(),
-            )),
-        );
-    }
+    // {
+    //     let mut pages = server.pages.write().unwrap();
+    //     pages.insert(
+    //         "/".to_string(),
+    //         Arc::new((brume::handler_generated::MIME_HTML, INDEX_HTML.to_vec())),
+    //     );
+    //     pages.insert(
+    //         "/a".to_string(),
+    //         Arc::new((
+    //             brume::handler_generated::MIME_TEXT,
+    //             b"Hello from a".to_vec(),
+    //         )),
+    //     );
+    // }
 
     let app = brume::handler_generated::router().with_state(server);
 
