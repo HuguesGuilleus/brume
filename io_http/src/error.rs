@@ -9,8 +9,6 @@ pub struct WrapError {
     pub desc: &'static str,
     /// Sub error
     pub source_error: Option<Box<dyn std::error::Error + 'static>>,
-    /// Some argument, logged, but not returned to client.
-    pub argument: Option<String>,
     // A status code returned to the HTTP client.
     pub status_http: Option<StatusCode>,
 }
@@ -20,7 +18,6 @@ impl WrapError {
         Self {
             source_error: None,
             desc: description,
-            argument: None,
             status_http: None,
         }
     }
@@ -29,21 +26,15 @@ impl WrapError {
         Self {
             desc: description,
             source_error: None,
-            argument: None,
             status_http: Some(status_http),
         }
     }
 
-    pub fn wrap(mut self, source_error: Box<dyn std::error::Error>) -> Self {
-        self.source_error = Some(source_error);
-        self
-    }
-
-    /// Add the argument of the failing operation.
-    /// The previous argument are replaced.
-    pub fn arg(mut self, argument: String) -> Self {
-        self.argument = Some(argument);
-        self
+    pub fn add_err<E: std::error::Error + 'static>(self, err: E) -> Self {
+        Self {
+            source_error: Some(Box::new(err)),
+            ..self
+        }
     }
 
     pub fn description(&self) -> &'static str {
@@ -54,10 +45,6 @@ impl WrapError {
 impl fmt::Display for WrapError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str(self.desc)?;
-
-        if let Some(arg) = &self.argument {
-            write!(f, " {:?}", arg)?;
-        }
 
         if let Some(src) = &self.source_error {
             write!(f, " {}", src)?;
