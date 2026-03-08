@@ -1,4 +1,5 @@
 use crate::*;
+use axum::http::StatusCode;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 
@@ -15,6 +16,15 @@ impl DTO for Page {
             Err(err_empty_values("need: title, description, body"))
         } else {
             Ok(())
+        }
+    }
+    fn check_user(self: &Self, user: &UserToken) -> Result<()> {
+        match user.allow(42, UserLevel::EditData) {
+            true => Ok(()),
+            false => Err(WrapError::http(
+                StatusCode::FORBIDDEN,
+                "You can not access to this resources",
+            )),
         }
     }
 }

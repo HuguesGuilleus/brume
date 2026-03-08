@@ -1,12 +1,15 @@
 use axum::{
     body::Bytes,
     extract,
-    http::{StatusCode, header::CONTENT_TYPE},
+    http::{
+        HeaderMap, StatusCode,
+        header::{CONTENT_TYPE, COOKIE},
+    },
     response::IntoResponse,
 };
 use serde::{Deserialize, Serialize};
 
-use crate::{HTTPState, Result, UserToken, WrapError};
+use crate::{HTTPState, Result, USER_COOKIE, UserToken, WrapError, usertoken};
 
 /* HANDLER INPUT / OUTPUT TYPES */
 
@@ -56,9 +59,14 @@ impl DTO for EmptyDTO {
 pub async fn json_handler<S: HTTPState>(
     extract::State(state): extract::State<S>,
     extract::Path(handler): extract::Path<String>,
+    header: HeaderMap,
     body: Bytes,
 ) -> impl IntoResponse {
-    let user = UserToken::default();
+    let user = header
+        .get(COOKIE)
+        .map(|cookie| parse_cookie(cookie.as_bytes(), state.user_token_key()))
+        .flatten()
+        .unwrap_or_else(UserToken::default);
 
     match state.api_json(handler.as_str(), user, &body).await {
         Ok((_user, output)) => (StatusCode::OK, [(CONTENT_TYPE, bmime::JSON)], output),
@@ -69,6 +77,19 @@ pub async fn json_handler<S: HTTPState>(
             (status, [(CONTENT_TYPE, bmime::TEXT)], output.into_bytes())
         }
     }
+}
+
+fn parse_cookie(cookies: &[u8], key: &[u8]) -> Option<UserToken> {
+    if cookies.len() == 0 {
+        return None;
+    }
+    let now = std::time::UNIX_EPOCH.elapsed().ok()?;
+    cookies
+        .split(|&b| b == b';')
+        .filter(|&cookie| cookie.starts_with(USER_COOKIE.as_bytes()))
+        .filter_map(|cookie| std::str::from_utf8(&cookie[USER_COOKIE.len()..]).ok())
+        .flat_map(|token| usertoken::decode(token, key, now.as_secs()).ok())
+        .next()
 }
 
 fn print_err(output: &mut String, err: &WrapError) {

@@ -3,7 +3,7 @@ mod serve_api_data;
 mod serve_generated;
 mod usertoken;
 
-use axum::http::header::CONTENT_TYPE;
+use axum::http::header::{CONTENT_TYPE, SET_COOKIE};
 use axum::routing;
 use axum::{
     Router,
@@ -15,7 +15,10 @@ pub use error::{Result, WrapError};
 pub use serve_api_data::{
     DTO, DataRequest, DataResponse, DataResponseResult, EmptyDTO, api_data_call, data_response_ok,
 };
+use usertoken::encode_user_token;
 pub use usertoken::{UserLevel, UserToken};
+
+const USER_COOKIE: &str = "user=";
 
 #[async_trait::async_trait]
 pub trait HTTPState: Send + Sync {
@@ -56,6 +59,20 @@ pub fn router<S: HTTPState + Clone + 'static>() -> Router<S> {
 
     router = router
         .fallback(routing::get(serve_generated::serve_generated::<S>).fallback(method_not_allowed));
+
+    if cfg!(debug_assertions) {
+        router = router.route(
+            "/!user-token-editor",
+            routing::get(
+                async |axum::extract::State(state): axum::extract::State<S>| {
+                    let now = std::time::UNIX_EPOCH.elapsed().unwrap().as_secs();
+                    let token =
+                        encode_user_token(&UserToken::DEV_EDITOR, state.user_token_key(), now);
+                    ([(SET_COOKIE, token.clone())], token)
+                },
+            ),
+        )
+    }
 
     router
 }

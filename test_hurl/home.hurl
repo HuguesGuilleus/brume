@@ -13,6 +13,22 @@ POST http://localhost:8000/_api.json/home.set
 	"description": "desc",
 	"body": "Foo bar."
 }
+HTTP 403
+
+
+GET http://localhost:8000/!user-token-editor
+HTTP 200
+[Captures]
+token: body
+
+
+POST http://localhost:8000/_api.json/home.set
+Cookie: user={{token}}
+{
+	"title": "New great Title",
+	"description": "desc",
+	"body": "Foo bar."
+}
 HTTP 200
 
 
