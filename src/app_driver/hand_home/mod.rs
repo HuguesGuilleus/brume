@@ -1,7 +1,18 @@
-use crate::*;
 use axum::http::StatusCode;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
+
+use crate::{
+    app_driver::{
+        State,
+        error::{err_empty_values, err_sync_fail},
+    },
+    base::bmime,
+    io_http::{
+        DTO, DataRequest, DataResponse, DataResponseResult, EmptyDTO, Result, UserLevel, UserToken,
+        WrapError, data_response_ok,
+    },
+};
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq)]
 pub struct Page {
@@ -11,7 +22,7 @@ pub struct Page {
 }
 
 impl DTO for Page {
-    fn check(self: &Self) -> crate::Result<()> {
+    fn check(self: &Self) -> Result<()> {
         if self.title.len() == 0 || self.description.len() == 0 || self.body.len() == 0 {
             Err(err_empty_values("need: title, description, body"))
         } else {
@@ -29,7 +40,7 @@ impl DTO for Page {
     }
 }
 
-pub fn init(server: &State) -> crate::Result<()> {
+pub fn init(server: &State) -> Result<()> {
     let mut page = server.home.lock().map_err(err_sync_fail)?;
 
     *page = Page {
@@ -56,7 +67,7 @@ pub async fn get(server: &State, _: DataRequest<EmptyDTO>) -> DataResponseResult
     data_response_ok(home.clone())
 }
 
-fn render(server: &State, page: &Page) -> crate::Result<()> {
+fn render(server: &State, page: &Page) -> Result<()> {
     let content = format!(
         "{}\r\n=====\r\n\r\n*{}*\r\n\r\n{}",
         page.title, page.description, page.body,

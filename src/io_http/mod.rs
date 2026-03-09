@@ -11,6 +11,7 @@ use axum::{
 };
 use std::sync::Arc;
 
+use crate::base::bmime;
 pub use error::{Result, WrapError};
 pub use serve_api_data::{
     DTO, DataRequest, DataResponse, DataResponseResult, EmptyDTO, api_data_call, data_response_ok,

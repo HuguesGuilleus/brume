@@ -3,7 +3,8 @@ use axum::{
     http::{HeaderName, StatusCode},
 };
 
-use crate::HTTPState;
+use super::HTTPState;
+use crate::base::bmime;
 
 pub async fn serve_generated<S: HTTPState + Clone + Send + Sync + 'static>(
     extract::State(state): axum::extract::State<S>,

@@ -38,7 +38,7 @@ use axum::http::StatusCode;
 use crypto::mac::Mac;
 
 use super::Result;
-use crate::WrapError;
+use super::WrapError;
 
 #[derive(Debug, Copy, Clone, Default, PartialEq, PartialOrd)]
 pub enum UserLevel {
