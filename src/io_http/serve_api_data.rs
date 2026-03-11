@@ -1,6 +1,8 @@
+use super::{HTTPState, USER_COOKIE, usertoken};
+use crate::*;
 use axum::{
     body::Bytes,
-    extract,
+    extract::{Path, State},
     http::{
         HeaderMap, StatusCode,
         header::{CONTENT_TYPE, COOKIE},
@@ -8,9 +10,6 @@ use axum::{
     response::IntoResponse,
 };
 use serde::{Deserialize, Serialize};
-
-use super::{HTTPState, Result, USER_COOKIE, UserToken, WrapError, usertoken};
-use crate::base::bmime;
 
 /* HANDLER INPUT / OUTPUT TYPES */
 
@@ -58,8 +57,8 @@ impl DTO for EmptyDTO {
 /* HANDLER WRAPER */
 
 pub async fn json_handler<S: HTTPState>(
-    extract::State(state): extract::State<S>,
-    extract::Path(handler): extract::Path<String>,
+    State(state): State<S>,
+    Path(handler): Path<String>,
     header: HeaderMap,
     body: Bytes,
 ) -> impl IntoResponse {

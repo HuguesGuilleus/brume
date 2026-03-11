@@ -1,13 +1,12 @@
+use super::HTTPState;
+use crate::*;
 use axum::{
-    extract,
+    extract::State,
     http::{HeaderName, StatusCode},
 };
 
-use super::HTTPState;
-use crate::base::bmime;
-
 pub async fn serve_generated<S: HTTPState + Clone + Send + Sync + 'static>(
-    extract::State(state): axum::extract::State<S>,
+    State(state): State<S>,
     uri: axum::http::Uri,
 ) -> (StatusCode, [(HeaderName, &'static str); 1], Vec<u8>) {
     match state.cached(uri.path()) {

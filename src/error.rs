@@ -16,8 +16,8 @@ pub struct WrapError {
 impl WrapError {
     pub fn new(description: &'static str) -> Self {
         Self {
-            source_error: None,
             desc: description,
+            source_error: None,
             status_http: None,
         }
     }
